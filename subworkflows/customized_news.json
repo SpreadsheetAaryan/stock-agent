@@ -1,0 +1,453 @@
+{
+  "name": "Customized News",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            },
+            {
+              "name": "topic"
+            },
+            {
+              "name": "days",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        272,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = JSON.parse($input.first().json.stdout);\nreturn [{\n  json: output\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        256
+      ],
+      "id": "2b00a1bc-2304-4376-a305-acef87d1f090",
+      "name": "Parse Date"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the items from the previous node (the Google Search output)\nconst searchResults = $input.first().json.feed;\n\n// Get the current ticker from another workflow\nconst currentTicker = $('When Executed by Another Workflow').first().json.ticker;\n\n// Check if search results exist\nif (!searchResults) {\n  return [{\n    json: {\n      cleaned_news_data: \"No recent news found for this company.\"\n    }\n  }];\n}\n\nconst searchResultsTen = searchResults.slice(0, 5);\n\nconst cleanedNewsData = searchResultsTen.map(result => {\n  const title = result.title;\n  const link = result.url;\n  const summary = result.summary;\n\n  // Try to find ticker sentiment for the current ticker\n  let tickerLabel = \"Not Mentioned\";\n  if (result.ticker_sentiment && Array.isArray(result.ticker_sentiment)) {\n    const match = result.ticker_sentiment.find(t => t.ticker === currentTicker);\n    if (match) {\n      tickerLabel = match.ticker_sentiment_label;\n    }\n  }\n\n  return `Title: ${title}\\nLink: ${link}\\nSummary: ${summary}\\nTicker Sentiment (${currentTicker}): ${tickerLabel}\\n`;\n}).join('');\n\nreturn [{\n  json: {\n    cleaned_news_data: cleanedNewsData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        384
+      ],
+      "id": "d271c0e0-67ea-4c04-8b81-f32e63317ed0",
+      "name": "Parse News"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assuming your text is coming from the previous node as 'content'\nconst inputText = $input.first().json.content.parts[0].text\n\n// A simple way to handle potential markdown issues is to replace the characters\nconst safeText = inputText\n  .replace(/\\*/g, '\\\\*')  // Escape asterisks\n  .replace(/_/g, '\\\\_')  // Escape underscores\n  .replace(/\\[/g, '\\\\[')  // Escape brackets\n  .replace(/`/g, '\\\\`');  // Escape backticks\n\n// Or, if you want to remove them altogether\n// const safeText = inputText.replace(/[*_`]/g, '');\n\nreturn {\n  json: {\n    safeText: safeText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        384
+      ],
+      "id": "500aa82c-897f-4dca-8c00-303df1a5d741",
+      "name": "Code_News"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ce1bfdcc-e034-4a3f-8f14-3e60e72972dc",
+              "leftValue": "={{ $('When Executed by Another Workflow').item.json.topic }}",
+              "rightValue": "None",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        352
+      ],
+      "id": "9c0b7441-e8b4-4f8d-8244-c2000f4e4f05",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "26a12d59-8d59-4ab4-a4bd-2c2849687cac",
+              "leftValue": "={{ $json.days }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        352
+      ],
+      "id": "6fe448c6-5d11-422f-b0c7-ac2e8d47a4ce",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ce1bfdcc-e034-4a3f-8f14-3e60e72972dc",
+              "leftValue": "={{ $('When Executed by Another Workflow').item.json.topic }}",
+              "rightValue": "None",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        528
+      ],
+      "id": "284cb2d2-ffdb-4794-82c2-0f6e950642d8",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Analyze the following news articles of the day. After analyzing the articles, return a response in the requested format. Do not add any words or extra information to the response besides the requested response format.\n\nNews Articles: {{ $json.cleaned_news_data }}\n\nRequested Response Format For Each Article: \n\nNews on {{ $('When Executed by Another Workflow').item.json.ticker }}: \n\nNow for each article, do this:\n\nTitle: Put the title of the article\n(put a space)\nSentiment Value: Just put the overall sentiment label for the article that I gave you as context. Example: Semi-Bullish\n(put a space)\nSummary of article: Write a SHORT paragraph summarizing the article, and its potential impact on the market/sector (depending on the context). \n\nThen put 2 spaces between each article\n\nremember to use this format for every article. Do not put any extra information other than the requested format."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        384
+      ],
+      "id": "c7c15601-bfc8-4dbc-9563-4772a490a676",
+      "name": "News Analysis",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=python3 /home/node/n8n_scripts/one_day.py {{ $json.days }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        704,
+        256
+      ],
+      "id": "56e98e5c-39b5-4d26-98f8-f34f38206c65",
+      "name": "get_news"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&time_from={{ $json.time_from }}&time_to={{ $json.time_to }}&limit=10&tickers={{ $('When Executed by Another Workflow').item.json.ticker }}&topic={{ $('When Executed by Another Workflow').item.json.topic }}&apikey=1CWRN8DINC9MLVDX",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        272
+      ],
+      "id": "63b49e26-3841-478b-a248-23edcf225c44",
+      "name": "Alpha Vantage API 1"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&time_from={{ $json.time_from }}&time_to={{ $json.time_to }}&limit=10&tickers={{ $('When Executed by Another Workflow').item.json.ticker }}&apikey=1CWRN8DINC9MLVDX",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        416
+      ],
+      "id": "e5dbdacd-10ba-4d9e-ab83-4cb3b0eeaae9",
+      "name": "Alpha Vantage API 2"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=10&tickers={{ $json.ticker }}&topics={{ $json.topic }}&apikey=1CWRN8DINC9MLVDX",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        544
+      ],
+      "id": "5cd40f4e-52ac-4c03-80ec-b2d66cb41934",
+      "name": "Alpha Vantage API 3"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=10&tickers={{ $('When Executed by Another Workflow').item.json.ticker }}&apikey=1CWRN8DINC9MLVDX",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        688
+      ],
+      "id": "e8ab1549-fb97-4e4d-8804-d97ce2d2cf86",
+      "name": "Alpha Vantage API 4"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "ticker": "ORCL",
+          "topic": "None",
+          "days": 7
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Date": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse News": {
+      "main": [
+        [
+          {
+            "node": "News Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Alpha Vantage API 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alpha Vantage API 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "get_news",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Alpha Vantage API 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alpha Vantage API 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code_News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_news": {
+      "main": [
+        [
+          {
+            "node": "Parse Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alpha Vantage API 1": {
+      "main": [
+        [
+          {
+            "node": "Parse News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alpha Vantage API 2": {
+      "main": [
+        [
+          {
+            "node": "Parse News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alpha Vantage API 3": {
+      "main": [
+        [
+          {
+            "node": "Parse News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alpha Vantage API 4": {
+      "main": [
+        [
+          {
+            "node": "Parse News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "00645af8-8957-4a63-90cb-a20e3d680798",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "SXECowOp7FKsVfLM",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

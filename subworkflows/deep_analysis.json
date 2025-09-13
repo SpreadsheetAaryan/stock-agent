@@ -1,0 +1,214 @@
+{
+  "name": "Deep Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        240,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Act as a long-term investor. Use a comprehensive analysis of the stock with the ticker symbol: {{ $('When Executed by Another Workflow').item.json.ticker }}\n\nHere is financial data to help you do the following research. It has 3 months of past prices, income statement, balance sheet, and cash flow statement of past 4 years: {{ $('get_stock_data.py Deep').item.json.stdout }}\n\nHere is 10 articles showing recent news of the company. You can use this for sentiment anaylsis as I describe below: {{ $json.cleaned_news_data }}\n\nAnalyze and research through the following things before you give your response. Do not necesarily include these in your response, just use this as a checklist of how to anaylze the company.:\n\n1) Industry Potential\n\n2) Product Potential\n\n3) Competition\n\n4) Business Model\n\n5) Leadership\n\n6) Financials of the company, including balance sheet, cash flow statement, income statement of previous months and years, and P/E ratio and EPS.\n\n7) How profitable the company is, and how good it is at minimizing debt\n\n8) Recent news/public sentiment anaylsis\n\n9) Size of audience/market\n\n10) Valuation of the company using a DCF analysis.\n\n11) Deep technical analysis of the stock. Use previous stock price data of the last 3 months, and use knowledge of chart patterns, and all types of technical indicators, volume analysis, etc.\n\nResponse Format:\n\nCompany: put the company name and then ticker symbol\n\n1 Quarter Outlook: Create this outlook based off more short term factors. use the chart patterns, deep technical anaylsis, volume analysis, public sentiment analysis, recent news, current market conditions, etc. Keep the response to 2-3 sentences.\n\n1 Year Outlook: Create this outlook based off medium term factors. Use the recent news, current market conditions, predictions for market conditions in the next year, financials of the company, valuation of the company, competition, strength of their business model, leadership, recent growth. Keep the response to 2-3 sentences.\n\n5 Year Outlook: Create this outlook based off long term factors. Use industry potential, product potential, size of market/audience in the future, financials, how good the company is at maximizing profit and minimizing debt, leadership, and competition. Keep the response to 2-3 sentences.\n\nRisk Rating: First put the rating out of 10 (Example: 7/10). Then explain why in terms of the analysis checklist above. Keep the response length to a short paragraph.\n\nLong Term Investment Rating: First put the rating out of 10 (Example: 7/10). Then explain why in terms of the analysis checklist above. Keep the response length to a short paragraph.\n\nkeep your response to the format specified above only and no bold words. "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        400
+      ],
+      "id": "c32ceacd-ccb1-4c60-95d0-1b17a76f2260",
+      "name": "Deep Analysis",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assuming your text is coming from the previous node as 'content'\nconst inputText = $input.first().json.content.parts[0].text\n\n// A simple way to handle potential markdown issues is to replace the characters\nconst safeText = inputText\n  .replace(/\\*/g, '\\\\*')  // Escape asterisks\n  .replace(/_/g, '\\\\_')  // Escape underscores\n  .replace(/\\[/g, '\\\\[')  // Escape brackets\n  .replace(/`/g, '\\\\`');  // Escape backticks\n\n// Or, if you want to remove them altogether\n// const safeText = inputText.replace(/[*_`]/g, '');\n\nreturn {\n  json: {\n    safeText: safeText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        432
+      ],
+      "id": "fd5523a6-39d3-4a0b-b303-e5ac81040c19",
+      "name": "Code_Deep"
+    },
+    {
+      "parameters": {
+        "command": "=python3 /home/node/n8n_scripts/get_stock_data.py {{ $json.ticker }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        496,
+        368
+      ],
+      "id": "2a8af267-e492-4fa4-91a4-b83914ef9d0f",
+      "name": "get_stock_data.py Deep"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyAABdQ3gV2xIcjNwLGYeBtrxZ-qgptRg4c"
+            },
+            {
+              "name": "cx",
+              "value": "3460517515fe6410c"
+            },
+            {
+              "name": "q",
+              "value": "={{ $('When Executed by Another Workflow').item.json.ticker }} news "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        368
+      ],
+      "id": "ac66df0c-e36e-491c-8d18-926a3b602dbc",
+      "name": "SearchAPI_Deep"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the items from the previous node (the Google Search output)\nconst searchResults = $input.first().json.items;\n\n// Check if search results exist\nif (!searchResults) {\n  // If no results, return a message to the AI\n  return [{\n    json: {\n      cleaned_news_data: \"No recent news found for this company.\"\n    }\n  }];\n}\n\nconst searchResultsTen = searchResults.slice(0, 10);\n\n// Process the search results to create a clean text format\nconst cleanedNewsData = searchResultsTen.map(result => {\n  // Extract the title, link, and snippet\n  const title = result.title;\n  const link = result.link;\n  const snippet = result.snippet;\n\n  // Format into a readable string\n  return `Title: ${title}\\nLink: ${link}\\nDescription: ${snippet}\\n\\n`;\n}).join(''); // Join all results into a single string\n\n// Return the cleaned data as a new JSON property\nreturn [{\n  json: {\n    cleaned_news_data: cleanedNewsData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        400
+      ],
+      "id": "0dc17338-93dd-4b0a-916a-c8870b4869fc",
+      "name": "News Format Deep"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "ticker": "AAPL"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "get_stock_data.py Deep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deep Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code_Deep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_Deep": {
+      "main": [
+        []
+      ]
+    },
+    "get_stock_data.py Deep": {
+      "main": [
+        [
+          {
+            "node": "SearchAPI_Deep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchAPI_Deep": {
+      "main": [
+        [
+          {
+            "node": "News Format Deep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Format Deep": {
+      "main": [
+        [
+          {
+            "node": "Deep Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "58755c72-842a-4cf5-886f-aa464a673b83",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "P5AxLqjvJQhhZQS4",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "name": "Visualizations",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            },
+            {
+              "name": "days",
+              "type": "number"
+            },
+            {
+              "name": "id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        64,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.chart_path }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        672,
+        304
+      ],
+      "id": "14bbbd18-f0f9-433c-8bb3-51d4d37ce368",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = JSON.parse($input.first().json.stdout);\nreturn [{\n  json: output\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        304
+      ],
+      "id": "862a4f32-864f-4597-8256-dfd4ab57492c",
+      "name": "Parse Chart"
+    },
+    {
+      "parameters": {
+        "command": "=python3 /home/node/n8n_scripts/get_chart.py {{ $json.ticker }} {{ $json.days }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        256,
+        304
+      ],
+      "id": "e3dafa83-e8a6-4d1c-bf84-ba22c2eca412",
+      "name": "get_chart.py"
+    },
+    {
+      "parameters": {
+        "command": "=rm {{ $('Parse Chart').item.json.chart_path }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        304
+      ],
+      "id": "149830a6-2b48-43fd-9632-726ba5f68ae7",
+      "name": "Remove Chart"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('When Executed by Another Workflow').item.json.id }}",
+        "binaryData": true,
+        "binaryPropertyName": "=data",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        304
+      ],
+      "id": "14997690-cc98-488e-908a-849a762a3dcd",
+      "name": "Send Chart",
+      "webhookId": "62280fcd-e538-40b8-916e-d89255e5f059",
+      "credentials": {
+        "telegramApi": {
+          "id": "LglKSEj4i50Vk6NF",
+          "name": "Stock Analysis"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "ticker": "META",
+          "days": 16,
+          "id": 6192522663
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "get_chart.py",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Chart": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_chart.py": {
+      "main": [
+        [
+          {
+            "node": "Parse Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Send Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Chart": {
+      "main": [
+        [
+          {
+            "node": "Remove Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "03a055ef-2c85-4593-bb2e-280de95d1118",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "hRNv1RaIFBbMKlRl",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

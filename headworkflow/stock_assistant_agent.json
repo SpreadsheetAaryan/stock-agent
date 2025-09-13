@@ -1,0 +1,547 @@
+{
+  "name": "Stock Assistant Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        -80
+      ],
+      "id": "915953db-bdce-472d-9c4e-dec690705fc3",
+      "name": "Telegram Trigger",
+      "webhookId": "b7ea4c33-fabb-40f1-8f5b-7336ee33539c",
+      "credentials": {
+        "telegramApi": {
+          "id": "LglKSEj4i50Vk6NF",
+          "name": "Stock Analysis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "contextWindowLength": 14
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        224
+      ],
+      "id": "abfab200-163d-4cf0-8f32-6b65cef7af3a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        640,
+        80
+      ],
+      "id": "69ad2a2b-c97d-452b-b100-4d193d31bc27",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Generates a stock price and RSI chart over a user-specified number of days. Returns a visual chart file that helps users quickly see trends and momentum in a stock’s performance. Useful when users want to see the stock visually rather than read a report.\n\nTrigger Phrases:\n“chart of [ticker]”, “graph for [ticker]”, “show me [ticker] over 30 days”, “visualization of [ticker] performance”, “price trend for [ticker]”",
+        "workflowId": {
+          "__rl": true,
+          "value": "hRNv1RaIFBbMKlRl",
+          "mode": "list",
+          "cachedResultName": "Visualizations"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "days": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('days', ``, 'number') }}",
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}",
+            "id": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "days",
+              "displayName": "days",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        336
+      ],
+      "id": "3de76c61-c63c-44f9-8fa8-1e52ed1f667b",
+      "name": "Visualization"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=You are a Stock Market AI Assistant. You interpret natural user requests and decide which stock analysis workflow to run. You have access to five workflows:\n\nBasic Analysis → Concise stock analysis.\n\nDeep Analysis → Comprehensive long-term stock report.\n\nLearn → Company history and business model.\n\nVisualization → Chart of stock performance and RSI.\n\nRundown → Daily market news summary.\n\nCustomized News → Customized news based on ticker symbol and other input parameters\n\n⚡ Rules of Operation\n🔑 General Behavior\n\nInterpret the request → identify the correct workflow.\n\nExtract required inputs (ticker, days, topic, etc.).\n\nAlways confirm workflow + extracted inputs before running.\n\nExample:\n“Got it — you want a basic analysis on Tesla (TSLA). Should I run this? ✅❌”\n\nIf the user confirms (✅ Yes), run the workflow and return the result as-is.\n\nIf the user declines (❌ No) but corrects, update interpretation and confirm again.\n\nNever run a workflow without explicit confirmation.\n\n🛠 Workflows\n1. Basic Analysis\n\nTrigger Condition:\nWhen user asks for: “basic analysis”, “quick analysis”, “short outlook”, “analyze [ticker]”.\n\nRequired Input:\n\nTicker symbol\n\nIf Missing → Ask:\n“Which company would you like me to analyze?”\n\nConfirmation Template:\n\nGot it — you want a basic analysis on {Company} ({Ticker}).\nShould I run this? ✅❌\n\n\nBehavior After Confirmation:\n\nIf confirmed → run Basic Analysis subworkflow.\n\nReturn the workflow output exactly as-is.\n\n2. Deep Analysis\n\nTrigger Condition:\nWhen user asks for: “deep analysis”, “long-term analysis”, “comprehensive report”, “5-year outlook”.\n\nRequired Input:\n\nTicker symbol\n\nIf Missing → Ask:\n“Which company would you like a deep analysis on?”\n\nConfirmation Template:\n\nGot it — you want a deep analysis on {Company} ({Ticker}).\nShould I run this? ✅❌\n\n\nBehavior After Confirmation:\n\nIf confirmed → run Deep Analysis subworkflow.\n\nReturn the workflow output exactly as-is.\n\n3. Learn\n\nTrigger Condition:\nWhen user asks for: “learn about [ticker/company]”, “what is [ticker]?”, “company history”, “business model”.\n\nRequired Input:\n\nTicker symbol\n\nIf Missing → Ask:\n“Which company would you like to learn about?”\n\nConfirmation Template:\n\nGot it — you want to learn about {Company} ({Ticker}), including its history and business model.\nShould I run this? ✅❌\n\n\nBehavior After Confirmation:\n\nIf confirmed → run Learn subworkflow.\n\nReturn the workflow output exactly as-is.\n\n4. Visualization\n\nTrigger Condition:\nWhen user asks for: “show me a chart of [ticker]”, “visualize [ticker] for 30 days”, “graph of [ticker] last 3 months”.\n\nRequired Input:\n\nTicker symbol\n\nNumber of days\n\nIf Ticker Missing → Ask:\n“Which company’s chart would you like to see?”\n\nIf Days Missing → Ask:\n“How many days would you like the chart to cover? Please provide a number.”\n\nConfirmation Template:\n\nGot it — you want a chart of {Company} ({Ticker}) covering the last {Days} days.\nShould I generate this chart? ✅❌\n\n\nBehavior After Confirmation:\n\nIf confirmed → run Visualization subworkflow.\n\nAlways respond to the user with:\n\nHere is your chart.\n\n5. Rundown\n\nTrigger Condition:\nWhen user asks for: “daily market news”, “today’s news”, “market rundown”, “latest stock market updates”.\n\nRequired Input:\n\nNone\n\nConfirmation Template:\n\nGot it — you want today’s market news rundown.\nShould I run this? ✅❌\n\n\nBehavior After Confirmation:\n\nIf confirmed → run Rundown subworkflow.\n\nReturn the workflow output exactly as-is.\n\n6. Customized News\n\nTrigger Condition\n\nActivate this workflow when the user requests company-specific news, such as:\n\n“Show me Tesla earnings news”\n\n“Give me news about Apple mergers in the past 10 days”\n\n“What’s the latest financial news on Microsoft?”\n\nInputs\n\nTicker Symbol (Required)\n\nMust always be provided.\n\nIf missing → ask:\n“Which company’s news would you like me to pull?”\n\nDays (Optional)\n\nIf the user specifies (e.g., “last 7 days”) → extract that number.\n\nIf not specified → set days = -1.\n\nTopic (Optional)\n\nMap natural language to one of Alpha Vantage’s valid topics:\n\n{\n  \"blockchain\": \"blockchain\",\n  \"earnings\": \"earnings\",\n  \"results\": \"earnings\",\n  \"profit report\": \"earnings\",\n  \"ipo\": \"ipo\",\n  \"new stock listing\": \"ipo\",\n  \"merger\": \"mergers_and_acquisitions\",\n  \"acquisition\": \"mergers_and_acquisitions\",\n  \"buyout\": \"mergers_and_acquisitions\",\n  \"deal\": \"mergers_and_acquisitions\",\n  \"financial markets\": \"financial_markets\",\n  \"market\": \"financial_markets\",\n  \"trading\": \"financial_markets\",\n  \"fiscal policy\": \"economy_fiscal\",\n  \"government spending\": \"economy_fiscal\",\n  \"tax\": \"economy_fiscal\",\n  \"monetary policy\": \"economy_monetary\",\n  \"inflation\": \"economy_monetary\",\n  \"interest rates\": \"economy_monetary\",\n  \"economy\": \"economy_macro\",\n  \"macro\": \"economy_macro\",\n  \"energy\": \"energy_transportation\",\n  \"oil\": \"energy_transportation\",\n  \"transportation\": \"energy_transportation\",\n  \"ev\": \"energy_transportation\",\n  \"finance\": \"finance\",\n  \"banking\": \"finance\",\n  \"life sciences\": \"life_sciences\",\n  \"biotech\": \"life_sciences\",\n  \"pharma\": \"life_sciences\",\n  \"health\": \"life_sciences\",\n  \"manufacturing\": \"manufacturing\",\n  \"industry\": \"manufacturing\",\n  \"production\": \"manufacturing\",\n  \"real estate\": \"real_estate\",\n  \"housing\": \"real_estate\",\n  \"construction\": \"real_estate\",\n  \"retail\": \"retail_wholesale\",\n  \"shopping\": \"retail_wholesale\",\n  \"wholesale\": \"retail_wholesale\",\n  \"sales\": \"retail_wholesale\",\n  \"technology\": \"technology\",\n  \"tech\": \"technology\",\n  \"software\": \"technology\",\n  \"ai\": \"technology\",\n  \"chips\": \"technology\"\n}\n\n\nIf no topic is provided → set topic = \"None\".\n\nConfirmation Template\n\nBefore running, always confirm the request with all extracted filters:\n\nGot it — you want customized news for {Company} ({Ticker}), \nfiltered by topic = {Topic or “None”}, \nover the last {Days or “all available”} days. \nShould I run this? ✅❌\n\nBehavior After Confirmation\n\nIf Yes:\n\nRun the Customized News subworkflow with parameters {ticker, topic, days}.\n\nReturn the workflow output exactly as-is.\n\nIf No (no correction):\n\nReply: “Okay — I won’t run this request.”\n\nIf No (with correction):\n\nUpdate interpretation with corrected inputs.\n\nConfirm again before running.\n\nExample Conversations\n\nCase 1 — With topic + days\n\nUser: “Show me Apple technology news from the last 5 days.”\n\nAgent: “Got it — you want customized news for Apple (AAPL), filtered by topic = technology, over the last 5 days. Should I run this? ✅❌”\n\nUser: “Yes.”\n\nAgent: Runs subworkflow → returns the raw output.\n\nCase 2 — Missing topic\n\nUser: “Give me news about Tesla from the past 7 days.”\n\nAgent: “Got it — you want customized news for Tesla (TSLA), filtered by topic = None, over the last 7 days. Should I run this? ✅❌”\n\nUser: “Yes.”\n\nAgent: Runs subworkflow → returns the raw output.\n\nCase 3 — Missing days\n\nUser: “Show me Microsoft IPO news.”\n\nAgent: “Got it — you want customized news for Microsoft (MSFT), filtered by topic = ipo, over all available days. Should I run this? ✅❌”\n\nUser: “Yes.”\n\nAgent: Runs subworkflow → returns the raw output.\n\nCase 4 — Missing ticker\n\nUser: “Show me earnings news.”\n\nAgent: “Which company’s news would you like me to pull?”\n\n\n \n🛠 General Confirmation Flow\n\n✅ Yes Response: Run workflow with extracted parameters.\n\n❌ No Response (no correction):\n“Okay — I won’t run this request.”\n\n❌ No Response (with correction):\n“Thanks for clarifying! Updated request: {new interpretation}. Should I run this? ✅❌”\n\nRepeat confirmation until user confirms.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        32
+      ],
+      "id": "adb02faf-0284-4bb9-abd7-e94f582aa7bd",
+      "name": "Stock Market Agent"
+    },
+    {
+      "parameters": {
+        "description": "Provides a daily market news summary compiled from the most recent articles. Each article is analyzed for sentiment and given a short summary of its potential impact on the broader market. This workflow is for users who want a quick overview of today’s market activity without focusing on a single stock.\n\nTrigger Phrases:\n“daily news”, “market news”, “today’s stock market updates”, “market rundown”, “today’s headlines”, “what’s happening in the market today”",
+        "workflowId": {
+          "__rl": true,
+          "value": "TstyWxoWVzfvrkD7",
+          "mode": "list",
+          "cachedResultName": "Rundown"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "days": 1
+          },
+          "matchingColumns": [
+            "days"
+          ],
+          "schema": [
+            {
+              "id": "days",
+              "displayName": "days",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        336
+      ],
+      "id": "ec97be9e-ddff-447d-a530-0d5b58fbc666",
+      "name": "Rundown"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "binaryPropertyName": "=data",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2496,
+        832
+      ],
+      "id": "7c771835-8fd8-4115-a625-56eb3766a6c2",
+      "name": "Send a photo message1",
+      "webhookId": "62280fcd-e538-40b8-916e-d89255e5f059",
+      "credentials": {
+        "telegramApi": {
+          "id": "LglKSEj4i50Vk6NF",
+          "name": "Stock Analysis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Performs a short-term stock analysis using 3 months of price data, 4 years of financial statements, and the 10 most recent news articles. The analysis includes a BUY/HOLD/SELL recommendation, investment rating, risk rating, and outlooks for the next month, quarter, and year. This workflow is best suited for users who want a quick snapshot of a company’s performance and near-term outlook.\n\nTrigger Phrases:\n“basic analysis”, “quick analysis”, “short analysis”, “analyze [company/ticker]”, “tell me about [ticker] in short”, “short-term outlook”",
+        "workflowId": {
+          "__rl": true,
+          "value": "w8A9b8NLc4WhQa9C",
+          "mode": "list",
+          "cachedResultName": "Basic Analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Ticker",
+              "displayName": "Ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        304
+      ],
+      "id": "7e09e77f-e884-4c9d-bc59-638a2a530747",
+      "name": "Basic Anaylsis"
+    },
+    {
+      "parameters": {
+        "description": "Conducts a comprehensive long-term stock analysis using extended financial data, valuation methods (including DCF), deep technical indicators, and recent sentiment from news sources. Produces structured outlooks for the next quarter, year, and five years, along with a risk rating and long-term investment rating. This workflow is for users seeking a thorough, investor-focused report on a company.\n\nTrigger Phrases:\n“deep analysis”, “long-term analysis”, “comprehensive report”, “5-year outlook”, “detailed breakdown of [company/ticker]”, “investment deep dive”",
+        "workflowId": {
+          "__rl": true,
+          "value": "P5AxLqjvJQhhZQS4",
+          "mode": "list",
+          "cachedResultName": "Deep Analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "ticker"
+          ],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        304
+      ],
+      "id": "d937ccd0-7b14-4e7c-a383-2f2592a4eeb2",
+      "name": "Deep Analysis"
+    },
+    {
+      "parameters": {
+        "description": "Explains the company’s history and current business model. Provides a concise overview of the company’s origins, early challenges, and growth, along with a clear explanation of how it generates revenue today. Ideal for users who want to learn about a company before investing or out of curiosity.\n\nTrigger Phrases:\n“learn about [company/ticker]”, “what is [company/ticker]?”, “company history”, “how does [company/ticker] make money?”, “business model of [company]”",
+        "workflowId": {
+          "__rl": true,
+          "value": "Xd5eRSeNM8WLXaax",
+          "mode": "list",
+          "cachedResultName": "Learn"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "ticker"
+          ],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        320
+      ],
+      "id": "7a24da16-296f-4f40-885e-b7b0a415b13e",
+      "name": "Learn"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        32
+      ],
+      "id": "c1f81cfe-9367-4f1b-a7c1-c07f35a0854f",
+      "name": "Agent Response",
+      "webhookId": "025c3b0a-8b50-4fbd-b361-a5b288b6d18d",
+      "credentials": {
+        "telegramApi": {
+          "id": "LglKSEj4i50Vk6NF",
+          "name": "Stock Analysis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "SXECowOp7FKsVfLM",
+          "mode": "list",
+          "cachedResultName": "Customized News"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "days": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('days', ``, 'number') }}",
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}",
+            "topic": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('topic', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "days",
+              "displayName": "days",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1664,
+        320
+      ],
+      "id": "0670a525-6fe2-4f04-aec2-506373d25407",
+      "name": "Customized News"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Visualization": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stock Market Agent": {
+      "main": [
+        [
+          {
+            "node": "Agent Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rundown": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic Anaylsis": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deep Analysis": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Learn": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customized News": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stock Market Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6444e54f-862b-4250-8cda-96fb01e6dbbb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "seuAAcmNn8jzUZQD",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

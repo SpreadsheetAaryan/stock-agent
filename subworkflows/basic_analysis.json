@@ -1,0 +1,214 @@
+{
+  "name": "Basic Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Ticker"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        272,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-lite-preview-06-17",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-lite-preview-06-17"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Do the following for the stock with ticker symbol: {{ $('When Executed by Another Workflow').item.json.Ticker }}\n\nHere is financial data to help you do the following research. It has 3 months of past prices, income statement, balance sheet, and cash flow statement of past 4 years: {{ $('get_stock_data.py Basic').item.json.stdout }}\n\nHere is 10 articles showing recent news of the company. You can use this for sentiment anaylsis as I describe below: {{ $json.cleaned_news_data }}\n\nDo a short technical analysis of the stock. Use previous stock price data of the last 3 months, and use knowledge of chart patterns, and all types of technical indicators, volume analysis, and more to determine the outlook of the stock price in the next month, quarter, and year\n\n\n\nNext, do a sentimental analysis of the stock. Look at the recent news of the company, and the public opinion. In addition, take into account the current market conditions. Then use this information to potentially alter your outlook on the stock price in the next month, quarter, and year.\n\n\n\nAnalyze and research through the following things before you give your response. These things should be used to potentially alter the outlook on the stock price in the next month, quarter, and year.\n\n\n\n1) Industry Potential\n\n2) Product Potential\n\n3) Competition\n\n4) Business Model\n\n5) Leadership\n\n6) Financials of the company, including balance sheet, cash flow statement, income statement of previous months and years, and P/E ratio and EPS.\n\n7) How profitable the company is, and how good it is at minimizing debt\n\n8) Size of audience/market\n\n9) Valuation of the company\n\n\n\nResponse Format (this is how the model should respond, no extra information than what is specified):\n\nCompany: put company and ticker symbol\n\nBSH: put either BUY, HOLD, or SELL based off all the analysis and information you went over\n\nInvestment Rating: out of 10, dont explain, just put the rating based off all the analysis and information you went over. (Example: 6/10)\n\nRisk Rating: out of 10, dont explain, just put the rating based off all the analysis and information you went over. (Example: 6/10)\n\nNext Month Outlook: put POSITIVE or NEGATIVE, don't explain, just put the rating based off all the analysis and information you went over.\n\nNext Quarter Outlook: put POSITIVE or NEGATIVE, don't explain, just put the rating based off all the analysis and information you went over\n\nNext Year Outlook: put POSITIVE or NEGATIVE, don't explain, just put the rating based off all the analysis and information you went over\n\ndo not put anything else besides that response format. do not expand on anything else. do not put more information.\n\nRemember to only keep it to that short response format I provided. Do not put any other word or information."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        352
+      ],
+      "id": "6c94ce7f-0a69-4039-932e-660edb391add",
+      "name": "Basic Anaylsis",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assuming your text is coming from the previous node as 'content'\nconst inputText = $input.first().json.content.parts[0].text\n\n// A simple way to handle potential markdown issues is to replace the characters\nconst safeText = inputText\n  .replace(/\\*/g, '\\\\*')  // Escape asterisks\n  .replace(/_/g, '\\\\_')  // Escape underscores\n  .replace(/\\[/g, '\\\\[')  // Escape brackets\n  .replace(/`/g, '\\\\`');  // Escape backticks\n\n// Or, if you want to remove them altogether\n// const safeText = inputText.replace(/[*_`]/g, '');\n\nreturn {\n  json: {\n    safeText: safeText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        352
+      ],
+      "id": "3a129f9d-972d-41c0-b348-cf4417bc970e",
+      "name": "Code_Basic"
+    },
+    {
+      "parameters": {
+        "command": "=python3 /home/node/n8n_scripts/get_stock_data.py {{ $json.Ticker }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        464,
+        352
+      ],
+      "id": "9b8116de-0b50-4f71-9db7-e25bcdb11af2",
+      "name": "get_stock_data.py Basic"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/customsearch/v1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyAABdQ3gV2xIcjNwLGYeBtrxZ-qgptRg4c"
+            },
+            {
+              "name": "cx",
+              "value": "3460517515fe6410c"
+            },
+            {
+              "name": "q",
+              "value": "={{ $('When Executed by Another Workflow').item.json.Ticker }} news "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        352
+      ],
+      "id": "0f0d0de6-57d9-4a02-acd5-f345d0a2dac7",
+      "name": "SearchAPI_Basic"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the items from the previous node (the Google Search output)\nconst searchResults = $input.first().json.items;\n\n// Check if search results exist\nif (!searchResults) {\n  // If no results, return a message to the AI\n  return [{\n    json: {\n      cleaned_news_data: \"No recent news found for this company.\"\n    }\n  }];\n}\n\nconst searchResultsTen = searchResults.slice(0, 10);\n\n// Process the search results to create a clean text format\nconst cleanedNewsData = searchResultsTen.map(result => {\n  // Extract the title, link, and snippet\n  const title = result.title;\n  const link = result.link;\n  const snippet = result.snippet;\n\n  // Format into a readable string\n  return `Title: ${title}\\nLink: ${link}\\nDescription: ${snippet}\\n\\n`;\n}).join(''); // Join all results into a single string\n\n// Return the cleaned data as a new JSON property\nreturn [{\n  json: {\n    cleaned_news_data: cleanedNewsData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        352
+      ],
+      "id": "c2b0ccd6-cd31-4af4-9346-221808d05e56",
+      "name": "News Format Basic"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "Ticker": "AAPL"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "get_stock_data.py Basic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic Anaylsis": {
+      "main": [
+        [
+          {
+            "node": "Code_Basic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_Basic": {
+      "main": [
+        []
+      ]
+    },
+    "get_stock_data.py Basic": {
+      "main": [
+        [
+          {
+            "node": "SearchAPI_Basic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SearchAPI_Basic": {
+      "main": [
+        [
+          {
+            "node": "News Format Basic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Format Basic": {
+      "main": [
+        [
+          {
+            "node": "Basic Anaylsis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "89b6394b-9f41-4d72-90c4-1b948e90fa6d",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "w8A9b8NLc4WhQa9C",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

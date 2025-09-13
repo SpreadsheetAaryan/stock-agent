@@ -1,0 +1,116 @@
+{
+  "name": "Learn",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        272,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assuming your text is coming from the previous node as 'content'\nconst inputText = $input.first().json.content.parts[0].text\n\n// A simple way to handle potential markdown issues is to replace the characters\nconst safeText = inputText\n  .replace(/\\*/g, '\\\\*')  // Escape asterisks\n  .replace(/_/g, '\\\\_')  // Escape underscores\n  .replace(/\\[/g, '\\\\[')  // Escape brackets\n  .replace(/`/g, '\\\\`');  // Escape backticks\n\n// Or, if you want to remove them altogether\n// const safeText = inputText.replace(/[*_`]/g, '');\n\nreturn {\n  json: {\n    safeText: safeText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        368
+      ],
+      "id": "df65e1a6-b0d5-4690-8b2c-ee3f10ff2c30",
+      "name": "Code_Learn"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Do the following for this company with this ticker symbol: {{ $json.ticker }}\n\nResponse Format (do not put any other extra information or words besides this specific format):\n\nCompany: put the company name and the ticker symbol\n\nHistory: In a short paragraph, describe the history of the company and how it was formed, and early challenges/grwoth opportunities. Keep it a paragraph only.\n\nBusiness Model: Describe the business model of the company today, and how it makes money. Explain it as if you are teaching. Explain how it makes money, and the products/services it has.\n\nkeep your response to the format specified above only with no bold words"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        432,
+        352
+      ],
+      "id": "872a36a9-6369-44a7-a683-e0dbbc6e0c5e",
+      "name": "Learn",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Learn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_Learn": {
+      "main": [
+        []
+      ]
+    },
+    "Learn": {
+      "main": [
+        [
+          {
+            "node": "Code_Learn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "970ae112-b3cf-4882-bcc5-f2ce03c6298d",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "Xd5eRSeNM8WLXaax",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}

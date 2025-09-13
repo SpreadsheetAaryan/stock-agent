@@ -1,0 +1,214 @@
+{
+  "name": "Rundown",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "days",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        272,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 /home/node/n8n_scripts/one_day.py 1"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        464,
+        352
+      ],
+      "id": "5f07b969-03a4-4236-8374-c3c34f64f0d3",
+      "name": "get_past_day"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = JSON.parse($input.first().json.stdout);\nreturn [{\n  json: output\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        352
+      ],
+      "id": "f1c8d9ea-2fbb-4bb2-be18-66303e4acbc6",
+      "name": "Parse Date"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the items from the previous node (the Google Search output)\nconst searchResults = $input.first().json.feed\n\n// Check if search results exist\nif (!searchResults) {\n  // If no results, return a message to the AI\n  return [{\n    json: {\n      cleaned_news_data: \"No recent news found for this company.\"\n    }\n  }];\n}\n\nconst searchResultsTen = searchResults.slice(0, 5);\n\n// Process the search results to create a clean text format\nconst cleanedNewsData = searchResultsTen.map(result => {\n  // Extract the title, link, and snippet\n  const title = result.title;\n  const link = result.url;\n  const summary = result.summary;\n  const sent_val = result.overall_sentiment_label;\n\n  // Format into a readable string\n  return `Title: ${title}\\nLink: ${link}\\nSummary: ${summary}\\nOverall Sentiment: ${sent_val}\\n`;\n}).join(''); // Join all results into a single string\n\n// Return the cleaned data as a new JSON property\nreturn [{\n  json: {\n    cleaned_news_data: cleanedNewsData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        384
+      ],
+      "id": "6d14c832-525d-46cc-8267-88d2c9755b1b",
+      "name": "Parse News"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Analyze the following news articles of the day. After analyzing the articles, return a response in the requested format. Do not add any words or extra information to the response besides the requested response format.\n\nNews Articles: {{ $json.cleaned_news_data }}\n\nRequested Response Format For Each Article: \n\nDaily Market Rundown: \n\nNow for each article, do this:\n\nTitle: Put the title of the article\n(put a space)\nSentiment Value: Just put the overall sentiment label for the article that I gave you as context. Example: Semi-Bullish\n(put a space)\nSummary of article: Write a SHORT paragraph summarizing the article, and its potential impact on the market/sector (depending on the context). \n\nThen put 2 spaces between each article\n\nremember to use this format for every article, and put \"Daily Market Rundown\" on top. Do not put any extra information other than the requested format."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        384
+      ],
+      "id": "d889ceb8-2e3c-4c57-aade-4790b67022d1",
+      "name": "News Analysis Daily Rundown",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2ctK6gy5b30oaLEJ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assuming your text is coming from the previous node as 'content'\nconst inputText = $input.first().json.content.parts[0].text\n\n// A simple way to handle potential markdown issues is to replace the characters\nconst safeText = inputText\n  .replace(/\\*/g, '\\\\*')  // Escape asterisks\n  .replace(/_/g, '\\\\_')  // Escape underscores\n  .replace(/\\[/g, '\\\\[')  // Escape brackets\n  .replace(/`/g, '\\\\`');  // Escape backticks\n\n// Or, if you want to remove them altogether\n// const safeText = inputText.replace(/[*_`]/g, '');\n\nreturn {\n  json: {\n    safeText: safeText\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        384
+      ],
+      "id": "32d8b351-63d9-48c6-b011-011b7144586a",
+      "name": "Code_Rundown"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&time_from={{ $json.time_from }}&time_to={{ $json.time_to }}&limit=10&apikey=1CWRN8DINC9MLVDX",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        384
+      ],
+      "id": "a09a7556-fa35-4a3d-9b86-9462d80321de",
+      "name": "Alpha Vantage API"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "get_past_day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_past_day": {
+      "main": [
+        [
+          {
+            "node": "Parse Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Date": {
+      "main": [
+        [
+          {
+            "node": "Alpha Vantage API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse News": {
+      "main": [
+        [
+          {
+            "node": "News Analysis Daily Rundown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News Analysis Daily Rundown": {
+      "main": [
+        [
+          {
+            "node": "Code_Rundown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_Rundown": {
+      "main": [
+        []
+      ]
+    },
+    "Alpha Vantage API": {
+      "main": [
+        [
+          {
+            "node": "Parse News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "946d6dc5-eb06-4158-805c-432235e2c728",
+  "meta": {
+    "instanceId": "7460cfb7ad42ef18ad7aac78ba4b8315e71eb94a7db5ab145554f8af2a7e4d66"
+  },
+  "id": "TstyWxoWVzfvrkD7",
+  "tags": [
+    {
+      "createdAt": "2025-09-09T03:47:34.838Z",
+      "updatedAt": "2025-09-09T03:47:34.838Z",
+      "id": "HWFKtNBiPRg4clVx",
+      "name": "stock_assistant"
+    }
+  ]
+}
