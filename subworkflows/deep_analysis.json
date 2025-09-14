@@ -47,7 +47,7 @@
       "name": "Deep Analysis",
       "credentials": {
         "googlePalmApi": {
-          "id": "2ctK6gy5b30oaLEJ",
+          "id": "={{$env.GEMINI_API_KEY}}",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -86,7 +86,7 @@
           "parameters": [
             {
               "name": "key",
-              "value": "AIzaSyAABdQ3gV2xIcjNwLGYeBtrxZ-qgptRg4c"
+              "value": "={{$env.GEMINI_API_KEY}}"
             },
             {
               "name": "cx",

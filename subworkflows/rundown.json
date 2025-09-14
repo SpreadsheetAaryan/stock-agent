@@ -87,7 +87,7 @@
       "name": "News Analysis Daily Rundown",
       "credentials": {
         "googlePalmApi": {
-          "id": "2ctK6gy5b30oaLEJ",
+          "id": "={{$env.GEMINI_API_KEY}}",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&time_from={{ $json.time_from }}&time_to={{ $json.time_to }}&limit=10&apikey=1CWRN8DINC9MLVDX",
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&time_from={{ $json.time_from }}&time_to={{ $json.time_to }}&limit=10&apikey={{$env.FINANCIAL_API_KEY}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

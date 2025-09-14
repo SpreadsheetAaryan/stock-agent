@@ -100,7 +100,7 @@
       "webhookId": "62280fcd-e538-40b8-916e-d89255e5f059",
       "credentials": {
         "telegramApi": {
-          "id": "LglKSEj4i50Vk6NF",
+          "id": "={{$env.TELEGRAM_API_KEY}}",
           "name": "Stock Analysis"
         }
       }

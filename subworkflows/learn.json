@@ -60,7 +60,7 @@
       "name": "Learn",
       "credentials": {
         "googlePalmApi": {
-          "id": "2ctK6gy5b30oaLEJ",
+          "id": "={{$env.GEMINI_API_KEY}}",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
