@@ -36,3 +36,5 @@ Thumbs.db
 # Build outputs
 dist/
 build/subworkflows/.DS_Store
+.DS_Store
+**/.DS_Store
